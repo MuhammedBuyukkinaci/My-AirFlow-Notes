@@ -75,3 +75,30 @@ This repository containes the notes that I took from [this course](https://www.u
 ![steps_taken](./images/005.png)
 
 13) Download docker-compose.yaml file from [here](https://airflow.apache.org/docs/apache-airflow/2.3.0/docker-compose.yaml). The reason why redis service exists in yaml file is that celery executor uses it.
+
+14) How to pause and unpause a DAG and assign tags to a DAG. You are not able to define permissions according to tasks.
+
+![steps_taken](./images/006.png)
+
+15) Delete DAG button doesn't delete DAG and its affiliated file. It just deletes metadata relating to DAG object.
+
+16) Grid View on UI provides us with summary statistics of DAG.
+
+17) Graph View on UI provides us with visualizations of tasks.
+
+18) Landing Times on UI provides us with historical timinings of each task in the DAG.
+
+![steps_taken](./images/007.png)
+
+19) Calendar on UI provides us with historical status of each runs.
+
+20) Gantt on UI enables us to detect any bottleneck on our tasks.
+
+21) Code on UI enables us to see the code of our DAGs.
+
+22) Tasks and dependencies on a DAG
+
+![steps_taken](./images/008.png)
+
+
+
