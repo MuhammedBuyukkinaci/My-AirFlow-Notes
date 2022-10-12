@@ -129,5 +129,3 @@ dmypy.json
 
 
 logs/
-dags/
-plugins/

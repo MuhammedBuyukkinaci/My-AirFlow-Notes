@@ -74,7 +74,7 @@ This repository containes the notes that I took from [this course](https://www.u
 
 ![steps_taken](./images/005.png)
 
-13) Download docker-compose.yaml file from [here](https://airflow.apache.org/docs/apache-airflow/2.3.0/docker-compose.yaml). The reason why redis service exists in yaml file is that celery executor uses it.
+13) Download docker-compose.yaml file from [here](https://airflow.apache.org/docs/apache-airflow/2.3.0/docker-compose.yaml). The reason why redis service exists in yaml file is that celery executor uses it. After placing the content in a **docker-compose.yaml**, run `docker-compose up -d`.
 
 14) How to pause and unpause a DAG and assign tags to a DAG. You are not able to define permissions according to tasks.
 
@@ -99,6 +99,45 @@ This repository containes the notes that I took from [this course](https://www.u
 22) Tasks and dependencies on a DAG
 
 ![steps_taken](./images/008.png)
+
+23) dags/user_processing.py is the first DAG we defined. It is a bind mounted to a docker container and we can see it on UI as a DAG.
+
+24) In a DAG, there are numerous tasks and these tasks are defined as operators. An operator is a single task in our DAG. The taskid parameter of any operator or sensor can be the name of that sensor or operator.
+
+25) Let's imagine a DAG that has two missions: cleaning data and processing data. Don't put them in a single task(operator). We should create 2 different tasks(operator).
+
+26) Airflow is built in modular way. To install core library, run `pip install apache-airflow`. The core library has PythonOperator and BashOperator by default. However, this might not be sufficient. Thus, we should install some providers like **apache-airflow-providers-amazon**, **apache-airflow-providers-snowflake** & **apache-airflow-providers-databricks** etc. These providers show us that Airflow is so extensible.
+
+27) After creating the first task named **create_table** in user_processing.py, define the connection named **postgres** on Airflow UI. Another connection used in is_api_available task is also below.
+
+![conn1](./images/009.png)
+
+![conn2](./images/010.png)
+
+28) After ading a new task to DAG, it is advised to test it. To test it, enter the scheduler(my-airflow-notes-airflow-scheduler-1) via `docker exec -it my-airflow-notes-airflow-scheduler-1 bash` and run the following:
+
+```temp.sh
+airflow tasks test user_processing create_table 2022-01-01
+```
+
+29) Sensors in Airflow is like a person waiting for a bus. Sensors wait for something to happen before executing the next task. Some sensors example are landing a file(**FileSensor**) or entries in a SQL table or an entry in an S3 bucket, you can use the **S3KeySensor**. There are 2 parametes belonging to a Sensor:
+
+- poke_interval: 60 seconds by default. The sensor checks if the condition is true or not before executing the next task.
+
+- timeout: 7 days by default.
+
+30) **HttpSensor** is an example sensor. It is imported via `from airflow.providers.http.sensors.http import HttpSensor`. It check whether a url is active or not.
+
+31) SimpleHttpOperator is used in extracting data from API.
+
+32) PythonOperator is allowing us to execute a Python function. In user_processing DAG, define a function named **_process_user** and call it from the task called process_user(an instance of PythonOperator).
+
+33) In Airflow, we can interact with many tools. To make sure that is easy to interact with a tool, there is a concept called Hook. Hook is allowing us to interact with an external tool or external service easily.  For instance, when we make an operation of insert via PostgresOperator, PostgresHook is called behind the scenes. The goal of PostgresHook is to abstract all the complexity of interacting with a database. Other Hook examples: AwsHOok, MySqlHook etc. Sometimes, we can't access to some necessary methods via operators. In these kinds of situations, take a look at Hooks.
+
+![hook](./images/011.png)
+
+34) It is recommended to define dependencies at the end of DAG file.
+
 
 
 
