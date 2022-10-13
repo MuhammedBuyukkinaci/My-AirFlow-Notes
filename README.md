@@ -74,7 +74,9 @@ This repository containes the notes that I took from [this course](https://www.u
 
 ![steps_taken](./images/005.png)
 
-13) Download docker-compose.yaml file from [here](https://airflow.apache.org/docs/apache-airflow/2.3.0/docker-compose.yaml). The reason why redis service exists in yaml file is that celery executor uses it. After placing the content in a **docker-compose.yaml**, run `docker-compose up -d`.
+13) Download docker-compose.yaml file from [here](https://airflow.apache.org/docs/apache-airflow/2.3.0/docker-compose.yaml). The reason why redis service exists in yaml file is that celery executor uses it. After placing the content in a **docker-compose.yaml**, run `docker-compose up -d`. There are 8 services on docker-compose yaml file:
+
+![8_servces](./images/013.png)
 
 14) How to pause and unpause a DAG and assign tags to a DAG. You are not able to define permissions according to tasks.
 
@@ -137,6 +139,66 @@ airflow tasks test user_processing create_table 2022-01-01
 ![hook](./images/011.png)
 
 34) It is recommended to define dependencies at the end of DAG file.
+
+35) Some important parameters for DAG Scheduling:
+
+- start_date parameter of DAG defines times at which our DAGs being scheduled.
+
+- schedule_interval: How often a DAG runs.
+
+- end_date: The time till our DAG will run. It isn't obligatory but possible to define.
+
+36) Every DAGrun object has 2 different attributes: 'data_interval_start' and 'data_interval_end'
+
+![interval](./images/012.png)
+
+37) Backfilling is catching up our non-triggered DAG Runs. `catchup=True` lets us backfill non-triggered DAG's.
+
+38) Executor in Airflow:
+
+- doesn't run tasks
+- doesn't execute tasks.
+- defines how to run tasks, on which system etc.
+
+39) 2 types of Executor:
+
+- Local: Local Executor(To run multiple tasks on a single machine) and Sequential Executor(to run a single task on a single machine)
+
+- Remote: CeleryExecutor(To run tasks on Celery cluster), KubernetesExecutor(To run tasks on k8s cluster)
+
+40) To configure which executor to be called, configure it configuration file. The default executor in airflow.cfg is __SequentialExecutor__.
+
+41) In order to obtain default Airflow configurations, copy the configuration from docker container to host machine.
+
+```temp.sh
+# the docker-compose.yaml files located in My-AirFlow-Notes
+docker cp my-airflow-notes-airflow-scheduler-1:/opt/airflow/airflow.cfg .
+
+```
+
+42) There are 6 important configuration titles in **airflow.cfg**.
+
+43) The line having **AIRFLOW__CORE__EXECUTOR** in docker-compose.yaml overrides the line defining Executor in the configuration file. When we using docker, we are configuring it via docker-compose.yaml, not via airflow.cfg in the container.
+
+44) **SequentialExecutor** is the default executor when you install it manually. It runs one task at a time. In the following picture, the order is T1 -> T2 -> T3 -> T4. It is used in making experiments or debugging some issues. **SequentialExecutor** is used in SQLite databases.
+
+![interval](./images/014.png)
+
+45) The **LocalExecutor** is one step further than **SequentialExecutor**. As it allows us to run **multiple** tasks **at the same time** on a **single** machine. It is used with PostgreSQL, Oracle, MySQL databases(no SQLite databases). **LocalExecutor** doesn't scale very well because it runs on a single machine. T1 runs first. T2 & T3 runs at the same time. T4 runs last.
+
+![interval](./images/016.png)
+
+46) To use **LocalExecutor**, change the followings on docker-compose.yaml.
+
+![interval](./images/015.png)
+
+47) CeleryExecutor runs our tasks on multiple machines on a celery cluster. To be able to use CeleryExecutor, we shuld install celery queue. Possible celery queues are redis and rabbitmq. Override them via defining in docker-compose.yaml.
+
+![interval](./images/018.png)
+
+![interval](./images/017.png)
+
+
 
 
 
