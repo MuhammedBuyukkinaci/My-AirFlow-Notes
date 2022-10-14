@@ -182,21 +182,105 @@ docker cp my-airflow-notes-airflow-scheduler-1:/opt/airflow/airflow.cfg .
 
 44) **SequentialExecutor** is the default executor when you install it manually. It runs one task at a time. In the following picture, the order is T1 -> T2 -> T3 -> T4. It is used in making experiments or debugging some issues. **SequentialExecutor** is used in SQLite databases.
 
-![interval](./images/014.png)
+![sequential](./images/014.png)
 
 45) The **LocalExecutor** is one step further than **SequentialExecutor**. As it allows us to run **multiple** tasks **at the same time** on a **single** machine. It is used with PostgreSQL, Oracle, MySQL databases(no SQLite databases). **LocalExecutor** doesn't scale very well because it runs on a single machine. T1 runs first. T2 & T3 runs at the same time. T4 runs last.
 
-![interval](./images/016.png)
+![local](./images/016.png)
 
 46) To use **LocalExecutor**, change the followings on docker-compose.yaml.
 
 ![interval](./images/015.png)
 
-47) CeleryExecutor runs our tasks on multiple machines on a celery cluster. To be able to use CeleryExecutor, we shuld install celery queue. Possible celery queues are redis and rabbitmq. Override them via defining in docker-compose.yaml.
+47) CeleryExecutor runs our tasks on multiple machines on a celery cluster. To be able to use CeleryExecutor, we should install celery queue. Possible celery queues are redis and rabbitmq. Override them via defining in docker-compose.yaml. When we use CeleryExecutor, we have access to flower dashboard.
 
 ![interval](./images/018.png)
 
 ![interval](./images/017.png)
+
+48) When we use CeleryExecutor, we have access to flower dashboard on [http://localhost:5555](http://localhost:5555). Flower UI can be useful if we want to check failures or retries. Status = Online for status on celery dashboard means it is running and ready to accept tasks. We can define number of tasks on a given Celery worker. It is 16 by default. 
+
+49) If **AIRFLOW__CORE__LOAD_EXAMPLES** is set to False on docker-compose.yaml, it doesn't load example DAGS and therefore our UI is much cleaner.
+
+50) Queue is a part of Flower UI & CeleryEecutor. Queues can be useful on Flower UI and we can assign some resource consuming tasks to specific workers via Queues. Queue is a lineup task waiting to be triggered. We can distribute our tasks to multiple machines according to specifities of tasks and machines. In a real life scenario, we have multiple machines and these machines are our celery workers.
+
+![interval](./images/017.png)
+
+51) To create a one more celery worker, copy the service `airflow-worker` on docker-compose.yaml and pase as `airflow-worker-2`.
+
+52) We can create a queue on a worker in docker-compose.yaml `-q queue_name_is_here`. We can send tasks to this queue and the worker having that queue will execute the task. An example is below:
+
+```docker-compose_example.yaml
+command: celery worker -q high_cpu_consuming
+```
+
+53) By default, Tasks are dispatched to queue named `default`. We can assign tasks to specific queues on Operators (like we did on parallel_dag.py for transform task) section in airflow's website.
+
+54) To have a detailed info for concurrency configurations, take a look at [concurrency notes](./concurrency_notes.md).
+
+55) The first image is a data pipeline that we don't want. The second image is a data pipeline that we want. FOr the second image, it is required to create sub DAGs in order to organize them.
+
+- The first:
+![interval](./images/021.png)
+- The second:
+![interval](./images/022.png)
+
+56) The photo below belongs to **[download_a, download_b, download_c] >> check_files >> [transform_a, transform_b, transform_c]**.
+
+![sub_dag](./images/023.png)
+
+57) SubDAGs allow us to group our tasks together. In order to create sub-dags, place a folder named **subdags**.under **dags**. The subdag is located in `./dags/subdags/subdag_downloads.py` and `./dags/subdags/subdag_transforms.py`. The file located in `./dags/group_dag_with_subdags.py` is the main DAG script which imports subdags.
+
+58) In the subdag file, `f"{parent_dag_id}.{child_dag_id}"` defines the name of subdag and there is a dot between id's. Don't forget.
+
+59) SubDAGs are complicated and deprecated as of Airflow 2.2.0. A newer concept emerges: TaskGroups. The main dag file using taskgroups is `group_dag_with_taskgroups.py`. It is using task groups in `./dags/groups/group_downloads.py` and `./dags/groups/group_transforms.py`. Thanks to task groups, we don't need to create dag in a dag.
+
+![task_groups]](./images/024.png)
+
+60) If we want to share data between tasks in Airflow, there are 2 ways:
+
+- 1st way: Push the data into an exterior platform(HDFS, DB etc.) in the first task and pull the data from that platform in the second task. If our data is big enough(gigabytes of data), this sounds reasonable.
+
+![exterior_way](./images/025.png)
+
+- 2nd way: Use **xcom** in Airflow. Xcom is cross communication. Xcom allows to exchange small amount of data. If SQLite is used, The maximum amount of xcom can be 2 GB. The maximum amount of xcom can be 1 GB in postgresql. The maximum amount of xcom in Mysql is 64 KB. You should share metadata in xomd, not the data itself.
+
+![exterior_way](./images/026.png)
+
+61) xcom is located in Airflow as below image.
+![exterior_way](./images/027.png)
+
+62) xcom can be used via defining a function that returns a value. This function is called by a Python Operator. The return value is stored in xcom tab on Airflow(in terms of back end, it is stored in a database though).
+
+```xcom_usage1.py
+def _t1():
+    return 42
+
+t1 = PythonOperator(
+        task_id='t1',
+        python_callable=_t1
+)
+```
+
+62) We can specify key for xcom via the usage below:
+
+```xcom_usage2.py
+
+# Pushing data into xcom
+def _t1(ti):
+    ti.xcom_push(key = 'my_key', value = 42)
+
+t1 = PythonOperator(
+        task_id='t1',
+        python_callable=_t1
+)
+
+# Pulling data from xcom
+def _t2(ti):
+    ti.xcom_pull(key = 'my_key', task_ids = 't1')
+
+```
+
 
 
 
