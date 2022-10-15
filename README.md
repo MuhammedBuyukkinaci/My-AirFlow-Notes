@@ -281,6 +281,15 @@ def _t2(ti):
 
 ```
 
+63) A common usecase in airflow is to choose one task or another according to a condition. And for this, we have BranchOperator. Take a look at usage of BranchPythonOperator in `./dags/xcom_dag_branch.py`.
+
+![exterior_way](./images/028.png)
+
+64) There are many branchoperator other than BranchPythonOperator. That operator returns the task id's of the next task to execute if the condition is true or not.
+
+65) If download A, B, and C succeeded, send success email. Otherwise, send alert e-mails. In this case, **trigger rules** come in handy. Trigger rules define why our tasks are triggered. We can have 10 different trigger rules that we can use. We are able to modify why our tasks are triggered thanks to trigger rules.
+
+![trigger_rules](./images/028.png)
 
 
 
