@@ -134,7 +134,7 @@ airflow tasks test user_processing create_table 2022-01-01
 
 32) PythonOperator is allowing us to execute a Python function. In user_processing DAG, define a function named **_process_user** and call it from the task called process_user(an instance of PythonOperator).
 
-33) In Airflow, we can interact with many tools. To make sure that is easy to interact with a tool, there is a concept called Hook. Hook is allowing us to interact with an external tool or external service easily.  For instance, when we make an operation of insert via PostgresOperator, PostgresHook is called behind the scenes. The goal of PostgresHook is to abstract all the complexity of interacting with a database. Other Hook examples: AwsHOok, MySqlHook etc. Sometimes, we can't access to some necessary methods via operators. In these kinds of situations, take a look at Hooks.
+33) In Airflow, we can interact with many tools. To make sure that is easy to interact with a tool, there is a concept called **Hook**. Hook is allowing us to interact with an external tool or external service easily.  For instance, when we make an operation of insert via PostgresOperator, PostgresHook is called behind the scenes. The goal of PostgresHook is to abstract all the complexity of interacting with a database. Other Hook examples: AwsHOok, MySqlHook etc. Sometimes, we can't access to some necessary methods via operators. In these kinds of situations, take a look at Hooks.
 
 ![hook](./images/011.png)
 
@@ -285,14 +285,53 @@ def _t2(ti):
 
 ![exterior_way](./images/028.png)
 
+![exterior_way](./images/030.png)
+
 64) There are many branchoperator other than BranchPythonOperator. That operator returns the task id's of the next task to execute if the condition is true or not.
 
-65) If download A, B, and C succeeded, send success email. Otherwise, send alert e-mails. In this case, **trigger rules** come in handy. Trigger rules define why our tasks are triggered. We can have 10 different trigger rules that we can use. We are able to modify why our tasks are triggered thanks to trigger rules.
+65) If download A, B, and C succeeded, send success email. Otherwise, send alert e-mails. In this case, **trigger rules** come in handy. Trigger rules define why our tasks are triggered. We can have 10 different trigger rules that we can use. We are able to modify why our tasks are triggered thanks to trigger rules. 
 
-![trigger_rules](./images/028.png)
+![trigger_rules](./images/029.png)
 
+66) Different trigger rules:
 
+- all_success
 
+![trigger_rules](./images/031.png)
+
+- all_failed
+
+![trigger_rules](./images/032.png)
+
+- all_done
+
+![trigger_rules](./images/033.png)
+
+- one success
+
+![trigger_rules](./images/034.png)
+
+- one_failed
+
+![trigger_rules](./images/035.png)
+
+- none_failed
+
+![trigger_rules](./images/036.png)
+
+- none_failed_min_one_success
+
+![trigger_rules](./images/037.png)
+
+67) Elastic Search is a serach engine for our data. Kibana is UI for Elastic Search. Logstash is allowing us to fetch data from different sources.
+
+68) We can extend features and functionalities or Airflow. We can modify the views, we can add hooks, we can add new operators. We can customize existing operators. Before Airflow 2.0, we have add our new operator to plugin system but as of Airflow 2.0, we can extend an existing operator. While creating or extending a new feature, we always use OOP. Our new plugin class inherits from _AirflowPlugin_. After creatingour customized plugin, we can import is as regular modules.
+
+69) Plugins are lazy loaded and it needs restart if we add a new one.
+
+70) Create the connection named elastic_default and create the file named **./plugins/hooks/elastic/elastic_hook.py** for Elastic Search Hook. Every customized hook in Airflow inherits from `from airflow.hooks.base import BaseHook`. After defining the hook, we need to register it into our Plugin System.
+
+![elastic_hook_plugin](./images/038.png)
 
 
 
