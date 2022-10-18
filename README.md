@@ -33,7 +33,7 @@ This repository containes the notes that I took from [this course](https://www.u
 
 6) Executor defines how and on which support our tasks executed. For example, KubernetesExecutor is used to run tasks on Kubernetes Cluster. If we want to run our tasks on Celery Cluster, CeleryExecutor comes in handy. CeleryExecutor has 2 additional core components called Queue and Worker. Queue is responsible for executing in the right order. Workers are where our tasks are effectively executed. There is a Queue component in each Executor. In KubernetesExecetor, there is no Worker component. An Executor defines how our tasks are executed, whereas a worker is a process executing our task.
 
-7) DAG means Directed Acyclic Graph and it is nothing more than a graph. Acylic means task create no cycle.
+7) DAG means Directed Acyclic Graph and it is nothing more than a graph. Acylic means task create no cycle. DAG should be used via context managers, not via creating an instance and pass it to tasks.
 
 8) Operator is nothing more than a task. 3 differnt types of Operator:
 
@@ -180,11 +180,11 @@ docker cp my-airflow-notes-airflow-scheduler-1:/opt/airflow/airflow.cfg .
 
 43) The line having **AIRFLOW__CORE__EXECUTOR** in docker-compose.yaml overrides the line defining Executor in the configuration file. When we using docker, we are configuring it via docker-compose.yaml, not via airflow.cfg in the container.
 
-44) **SequentialExecutor** is the default executor when you install it manually. It runs one task at a time. In the following picture, the order is T1 -> T2 -> T3 -> T4. It is used in making experiments or debugging some issues. **SequentialExecutor** is used in SQLite databases.
+44) **SequentialExecutor** is the simplest & default executor when you install it manually. It runs one task at a time. In the following picture, the order is T1 -> T2 -> T3 -> T4. It is used in making experiments or debugging some issues. **SequentialExecutor** is used in SQLite databases. It is recommended for debugging and testing. It isn't recommended for production.
 
 ![sequential](./images/014.png)
 
-45) The **LocalExecutor** is one step further than **SequentialExecutor**. As it allows us to run **multiple** tasks **at the same time** on a **single** machine. It is used with PostgreSQL, Oracle, MySQL databases(no SQLite databases). **LocalExecutor** doesn't scale very well because it runs on a single machine. T1 runs first. T2 & T3 runs at the same time. T4 runs last.
+45) The **LocalExecutor** is one step further than **SequentialExecutor**. As it allows us to run **multiple** tasks **at the same time** on a **single** machine. It is used with PostgreSQL, Oracle, MySQL databases(no SQLite databases). **LocalExecutor** doesn't scale very well because it runs on a single machine. T1 runs first. T2 & T3 runs at the same time. T4 runs last. LocalExecutor is scalable well **vertically**.
 
 ![local](./images/016.png)
 
@@ -192,7 +192,7 @@ docker cp my-airflow-notes-airflow-scheduler-1:/opt/airflow/airflow.cfg .
 
 ![interval](./images/015.png)
 
-47) CeleryExecutor runs our tasks on multiple machines on a celery cluster. To be able to use CeleryExecutor, we should install celery queue. Possible celery queues are redis and rabbitmq. Override them via defining in docker-compose.yaml. When we use CeleryExecutor, we have access to flower dashboard.
+47) CeleryExecutor runs our tasks on multiple machines on a celery cluster. To be able to use CeleryExecutor, we should install celery queue. Possible celery queues are redis and rabbitmq. Override them via defining in docker-compose.yaml. When we use CeleryExecutor, we have access to flower dashboard. CeleryExecutor is scalable well **horizontally.**. **DaskExecutor** is similar to **CeleryExecutor**.
 
 ![interval](./images/018.png)
 
@@ -243,7 +243,7 @@ command: celery worker -q high_cpu_consuming
 
 ![exterior_way](./images/025.png)
 
-- 2nd way: Use **xcom** in Airflow. Xcom is cross communication. Xcom allows to exchange small amount of data. If SQLite is used, The maximum amount of xcom can be 2 GB. The maximum amount of xcom can be 1 GB in postgresql. The maximum amount of xcom in Mysql is 64 KB. You should share metadata in xomd, not the data itself.
+- 2nd way: Use **xcom** in Airflow. Xcom is cross communication messages. Xcom allows to exchange small amount of data. If SQLite is used, The maximum amount of xcom can be 2 GB. The maximum amount of xcom can be 1 GB in postgresql. The maximum amount of xcom in Mysql is 64 KB. You should share metadata in xomd, not the data itself.
 
 ![exterior_way](./images/026.png)
 
@@ -332,6 +332,98 @@ def _t2(ti):
 70) Create the connection named elastic_default and create the file named **./plugins/hooks/elastic/elastic_hook.py** for Elastic Search Hook. Every customized hook in Airflow inherits from `from airflow.hooks.base import BaseHook`. After defining the hook, we need to register it into our Plugin System.
 
 ![elastic_hook_plugin](./images/038.png)
+
+71) [Jinja Templating, Macros and Filters](https://airflow.apache.org/docs/apache-airflow/stable/templates-ref.html) is useful if we want to pass inormation to our DAGRun objects.
+
+72) __Airflow Variables__ is a generic way to store and retrieve arbitrary content within Airflow. They are represented as a simple key value stored into the meta database of Airflow. Values should be set without double quotes. Any Airflow Variable can be accessible in our dag files via **{{ var.value.var_key }}**. var_key is the file key value of custom-defined variable that we defined, such as **{{ var.value.source_path }}**. __Airflow Variables__  are super useful for storing and retrieving data at **runtime** while avoiding hard-coded values and duplicating code in your DAGs. 
+
+![elastic_hook_plugin](./images/039.png)
+
+73) Don't write any code outside of tasks(Global variables or any pieces of module level code). These may lead to open connections to metastore.
+
+74) Some links from the instructor:
+
+    - [DockerOperator and Templating](https://marclamberti.com/blog/how-to-use-dockeroperator-apache-airflow/)
+
+        - DockerOperator lets us execute commands inside container.
+
+        - Imagine a scenario that you run a script on 4 worker nodes(Celery) and your script is dependent on some dependencies. At each time your script runs, the dependencies will bei nstalled first and then the scripts runs. For this scenario, it sounds reasonable to use DockerOperator which is generated from Docker Image having dependencies installed.
+
+        - Understanding each operator takes lots of time. There are more than 80 operators defined in Airflow. This is why DockerOperator helps a lot.
+
+        - For DockerOperator, **command** and **environment** can be templated via Jinja Templating.
+
+        ```
+        t2 = DockerOperator(
+        task_id='docker_command',
+        image='centos:latest',
+        api_version='auto',
+        auto_remove=True,
+        environment={
+        'AF_EXECUTION_DATE': "{{ ds }}",
+        'AF_OWNER': "{{ task.owner }}"
+        },
+        command='/bin/bash -c \'echo "TASK ID (from macros): {{ task.task_id }} - EXECUTION DATE (from env vars): $AF_EXECUTION_DATE"\'',
+        docker_url='unix://var/run/docker.sock',
+        network_mode='bridge'
+        )
+        ```
+
+
+    - [Apache Airflow with Kubernetes Executor](https://marclamberti.com/blog/airflow-kubernetes-executor/)
+
+        - The reason why to use KubernetesExecutor is that we don't want resources allocated to Airflow only. Therefore, K8s comes in handy. Airflow cluster is static.
+
+        - KubernetesExecutor is an alternative to different types of Executors such as SequentialExecutor, LocalExecutor, CeleryExecutor, DaskExecutor. KubernetesExecutor lets us execute our tasks using K8s and make our Airflow cluster elastic.
+
+        - KubernetesExecutor is useful because it provides **High level of elasticity**, **Task-level pod configuration**(KubernetesExecutor creates a new pod for every task instance), **Fault tolerance**(A task isn't going to crash our entire Airflow Worker), **Simpler deployment**.
+
+        - 3 ways of making DAGS available in **KubernetesExecutor**. Prefer **persistent volume mode** for large DAG files(>1000).
+
+            - "Git clone with init container for each pod (Git-init mode)"
+            - "Mount volume with DAGs (persistent volume mode)"
+            - "Ensure the image already contains the DAG code (“pre-baked” mode)"
+    - [How to use templates and macros in Apache Airflow](https://marclamberti.com/blog/templates-macros-apache-airflow/)
+
+        - Take a look at `custom_params.py`, `macro_and_template.py` and `macro_example.py`
+
+        - Macros are functions that take an input, modify that input and give the modified output. Macros can be used in your templates.
+    - [How to use timezones in Apache Airflow](https://marclamberti.com/blog/how-to-use-timezones-in-apache-airflow/)
+
+    - [How to use the BashOperator](https://marclamberti.com/blog/airflow-bashoperator/)
+
+        -  Any value different than 0 means that an error occurred for BashOperator.
+
+    - [Variables in Apache Airflow](https://marclamberti.com/blog/variables-with-apache-airflow/)
+
+        - We can define variables via UI or in code or CLI.
+
+        - Since Apache Airflow 1.10.10, it is possible to store and fetch variables from environment variables just by using a special naming convention. Any environment variable prefixed by AIRFLOW_VAR_<KEY_OF_THE_VAR> will be taken into account by Airflow.
+
+    - [Apache Airflow Best Practices](https://marclamberti.com/blog/apache-airflow-best-practices-1/)
+
+
+        - Don't pass default_args to each task explicitly. Instead, pass it to DAG(deined via context managers) and the default_args will be accessible to other tasks.
+
+        - [The PostgresOperator](https://marclamberti.com/blog/postgres-operator-airflow/)
+
+            - PostgresOperator isn't use to process data. Use PostgresHook to process data.
+
+            - **params** argument lets you pass additional values to PostgresOperator
+
+            ```SELECT_AGE.sql 
+            SELECT CASE WHEN %(age)s > 21 THEN 'adult' ELSE 'young' END
+            ```
+
+            ```postgres_operator_usage.py
+            check_age = PostgresOperator(
+            task_id='check_age',
+            postgres_conn_id='postgres_default',
+            sql="sql/SELECT_AGE.sql",
+            params={ 'age': 30 }
+            )
+            ```
+
 
 
 
