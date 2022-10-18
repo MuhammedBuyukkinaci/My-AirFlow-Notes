@@ -424,6 +424,174 @@ def _t2(ti):
             )
             ```
 
+# Previous Apache Airflow Notes
+
+My notes on Apache Airflow from [these video series](https://www.youtube.com/watch?v=AHMm1wfGuHE&list=PLYizQ5FvN6pvIOcOd6dFZu3lQqc6zBGp2).
+
+1) Airflow is a platform to programmatically author,schedule and monitor workflows or data pipelines. Originally developed in Airbnb and then became an incubator for Apache.
+
+2) Workflow is
+
+- A sequence of tasks
+
+- Started on a schedule or triggered by an event
+
+- Frequently used to handle big data processing pipelines.
+
+3) An example workflow is below
+
+![workflow](./airflow_images/000.png)
+
+4) A traditional ETL Approach is below
+
+![ETL](./airflow_images/001.png)
+
+5) Some problems regarding the naive approach
+
+![Problems about ETL](./airflow_images/002.png)
+
+6) A workflow is described as a Directed Acyclic Graph (DAG). A DAG is composed of tasks. Multiple tasks canbe executed independently.
+
+![Problems about ETL](./airflow_images/003.png)
+
+7) An example Airflow DAG is below:
+
+![Example DAG - Twitter](./airflow_images/004.png)
+
+8) Graph View Tab in Airflow gives us nice representation of execution graph.
+
+9) Tree View shows historical graph.
+
+10) Logs of different attempts are shown on Airflow. Inputs and outputs are shown for each attempt.
+
+11) Gantt tab tells us how long each task takes.
+
+12) Not all tasks are consecutively executed.
+
+![Example DAG - Twitter](./airflow_images/005.png)
+
+13) Local link for airflow = http://localhost:8080/admin . It works on 8080 port.
+
+14) The hierarchy of Data Science is below:
+
+![Example DAG - Twitter](./airflow_images/006.png)
+
+15) Airflow has integrations for PostgreSQL, HDFS, Hive, MySQL, MSSQL and more.
+
+16) We can use Airflow in a Docker container.
+
+17) Run the following commands on a computer having docker and docker compose
+
+```
+git clone https://github.com/tuanavu/airflow-tutorial.git
+```
+
+18) Google Cloud Composer is a fully managed Apache Airflow to make workflow creation and management easy, powerful and consistent.
+
+19) Google Cloud Composer uses Google Cloud Storage to store airflow dags and we can easily manipulate.
+
+20) Deployment strategies on Google Cloud Composer: 
+
+- We can deploy DAG's via drag&drop Python files or using CLI through uploading files to Google Cloud Composer.
+
+- Auto Deployment: DAGs are stored in a git repo and a CI/CD pipeline created.
+
+21) A DAG file is generally a python script specifying DAG's structure as code.
+
+22) There are 5 steps of writing a DAG.
+
+- Importing modules
+- Default Arguments
+- Instantiate a DAG
+- Tasks
+- Setting up Dependencies
+
+23) Some 'importing modules' code are below:
+
+```
+import airflow
+from airflow import DAG
+from airflow.operators.bash_operator import BashOperator
+# and other python necessary imports
+```
+
+24) Default arguments is a Python dictionary. An example is below
+
+![Default arguments](./airflow_images/007.png)
+
+25) Instantiate a DAG object from DAG class. An example is below:
+
+![Instantiate a DAG](./airflow_images/008.png)
+
+26) Tasks are main components of a DAG. Task 3 is an instance of Jinja Templating.
+
+![Tasks](./airflow_images/009.png)
+
+27) We can set dependencies like task 1 should start before task 2 or vice versa via **some_task_name.set_downstream(some_task_name)** or **some_task_name.set_upstream(some_task_name)**. Setting upstream or downstream can be done via **>>** or **<<**.
+
+![dependencies](./airflow_images/010.png)
+
+![dependencies](./airflow_images/011.png)
+![dependencies](./airflow_images/011.png)
+
+28) ds is an Airflow built-in functionality in Jinja Templates. It is showing current date.
+
+29) DAG (Directed Acyclic Graph) is a graph that no cycles and the data in each node flows forward in only one direction.
+
+30) DAGs don't pefform any actual computation. Instead, operators determine what actually gets done. DAG is an organizer for tasks an set their execution context.
+
+31) When an operator is instantiated, it is referred to as a task. An operator describes a single task in a workflow.
+
+32) Operators are classified into 3 categories
+
+- Sensors: A certain type of operator that will keep running until a certain criteria is met. Generally, first task in workflow
+- Operators: triggers a certain action(run a bash command, execute a python function, execute a hive query etc.)
+- Transfers: moves data from one location to another
+
+33) Examples for each operator category
+
+- Sensors:  HdfsSensor -  It waits for a file to land in HDFS.
+- Operators: BashOperator - It executes a bash command
+- Operators: PythonOperator - It calls an arbitrary Python function
+- Operators: HiveOperator - Executes hql code or hive scripts in a specific Hive DB.
+- Operators: BigQueryOperator: Executes Google BigQuery SQL Queries in a specific DB
+- Transfers: MySqlToHiveTransfer: Moves data from MySql to Hive
+- Transfers: S3ToRedshiftTransfer: Load files from S3 to Redshift
+
+34) Airflow provies prebuilt operators for many common tasks. Some examples are available on [here](https://github.com/apache/airflow/tree/main/airflow/contrib).
+
+35) We can create a new connection like connection to BigQuery on Apache Airflow. Admin Tab >> Connection >> Create
+
+36) You can use a generated connection in Python script for Airflow
+
+37) A sample DAG file for Big Query can be found [here](https://github.com/tuanavu/airflow-tutorial/blob/master/examples/gcloud-example/dags/bigquery_github/bigquery_github_trends.py)
+
+38) Airflow variables are key-value stores in Airflow's metadata database.
+
+39) Some config variables might be like below:
+
+![config](./airflow_images/013.png)
+
+40) Usage of Apache Airflow Variables
+
+![config](./airflow_images/014.png)
+
+40) We can edit variables by editing code or using Airflow GUI(Admin >> Variables).
+
+41) It is recommended to have limited number of Airflow variables because the more the airflow variables, the more the connections to metadata db.
+Using a json like varible which is composed of many key value pairs is a recommended way .
+
+![best practice](./airflow_images/015.png)
+
+42) We can use Jinja Template to be able to use Airflow variables.
+
+43) We can run CRUD operations on variables through Airflow CLI.
+
+44) Airflow Variables defined via GUI are globally accessible because they are stored in a metadata db.
+
+45) Components of Apache Airflow
+
+![best practice](./airflow_images/016.png)
 
 
 
